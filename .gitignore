@@ -219,3 +219,10 @@ __marimo__/
 
 # OS files
 .DS_Store
+
+# Claude files
+*.md
+*.tex
+*.aux
+*.gz
+
