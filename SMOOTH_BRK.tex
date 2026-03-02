@@ -1,0 +1,156 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+
+\title{Laplacian Smoothing of Breaking Momentum (\texttt{SMOOTH\_BRK})}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Motivation}
+
+Wave-breaking momentum $\mathcal{B}(x,y)$ in the WEC formulation is computed from
+WaveWatch~III dissipation fields that are interpolated onto the ROMS grid. At coarse
+resolution ($\Delta x \approx 30$\,m in L4PTSAL), the surfzone spans only 2--4 cells.
+In complex 2D geometry---embayments and headlands---the setup pressure gradient cannot
+balance the concentrated forcing, producing unrealistic nearshore currents.
+
+Zeroing breaking momentum entirely (\texttt{BRK0}) removes the symptom but is
+unphysical. Instead, we spread $\mathcal{B}$ over a physically motivated minimum
+width using iterative Laplacian smoothing, representing the unresolved cross-shore
+extent of roller propagation and turbulent bore momentum transfer.
+
+Only $\mathcal{B}$ is smoothed, not the breaking dissipation $\varepsilon_b$.
+The Akb mixing pathway is therefore unaffected.
+
+\section{Discrete Laplacian smoother}
+
+We apply the isotropic Laplacian stencil from Shchepetkin (used in KPP boundary
+layer smoothing). At each iteration the field is updated as
+\begin{equation}
+  \mathcal{B}_{i,j} \;\leftarrow\; \mathcal{B}_{i,j}
+  + c_1\bigl(F^x_{i+1,j} - F^x_{i,j} + F^\eta_{i,j+1} - F^\eta_{i,j}\bigr),
+  \label{eq:update}
+\end{equation}
+where $c_1 = 3/16$, and $F^x$, $F^\eta$ are masked elementary differences with
+an isotropy correction controlled by $c = 1/12$.
+
+The elementary differences are
+\begin{align}
+  \widetilde{F}^x_{i,j}    &= \bigl(\mathcal{B}_{i,j} - \mathcal{B}_{i-1,j}\bigr)\,m^u_{i,j}, \\
+  \widetilde{F}^\eta_{i,j} &= \bigl(\mathcal{B}_{i,j} - \mathcal{B}_{i,j-1}\bigr)\,m^v_{i,j},
+\end{align}
+where $m^u$, $m^v$ are the u- and v-point land masks (enforcing Neumann conditions
+at the coastline; see \S\ref{sec:neumann}). The corrected fluxes are
+\begin{align}
+  F^\eta_{i,j} &= \widetilde{F}^\eta_{i,j}
+    + c\bigl(\widetilde{F}^x_{i+1,j} + \widetilde{F}^x_{i,j-1}
+            - \widetilde{F}^x_{i,j}   - \widetilde{F}^x_{i+1,j-1}\bigr), \\
+  F^x_{i,j}   &= \widetilde{F}^x_{i,j}
+    + c\bigl(\widetilde{F}^\eta_{i,j+1} + \widetilde{F}^\eta_{i-1,j}
+            - \widetilde{F}^\eta_{i,j}   - \widetilde{F}^\eta_{i-1,j+1}\bigr).
+\end{align}
+The transversal correction terms restore isotropy: without them ($c=0$) the
+stencil is a standard 5-point Laplacian with grid-aligned bias; with $c=1/12$
+the effective weights are
+\[
+\frac{1}{32}\begin{pmatrix} 1 & 4 & 1 \\ 4 & 12 & 4 \\ 1 & 4 & 1 \end{pmatrix},
+\]
+which is the unique 9-point isotropic discrete Laplacian on a uniform grid.
+
+\section{Conservation}
+
+Summing (\ref{eq:update}) over all interior points, the right-hand side telescopes:
+\begin{equation}
+  \sum_{i,j} \bigl(F^x_{i+1,j} - F^x_{i,j}\bigr) = 0, \qquad
+  \sum_{i,j} \bigl(F^\eta_{i,j+1} - F^\eta_{i,j}\bigr) = 0,
+\end{equation}
+because each flux appears once with positive sign and once with negative sign
+in the interior sum. At domain boundaries, the Neumann condition
+(zero normal derivative, \S\ref{sec:neumann}) ensures that boundary fluxes
+vanish, so no momentum is created or destroyed:
+\begin{equation}
+  \sum_{i,j} \mathcal{B}_{i,j}^{(n+1)} = \sum_{i,j} \mathcal{B}_{i,j}^{(n)}.
+\end{equation}
+On a variable-metric grid, conservation holds to $O(\Delta x^2)$; on a
+uniform grid it is exact.
+
+\section{Neumann boundary conditions}
+\label{sec:neumann}
+
+At physical boundaries (coastline and open-boundary edges), we impose the
+discrete Neumann condition
+\begin{equation}
+  \mathcal{B}_{\text{ghost}} = \mathcal{B}_{\text{interior}},
+\end{equation}
+i.e.\ the ghost-point value mirrors the adjacent interior value, giving a
+zero normal gradient. This enters the smoother through two mechanisms:
+
+\begin{enumerate}
+\item \textbf{Masking.} Multiplying the elementary differences by $m^u_{i,j}$
+  and $m^v_{i,j}$ zeroes any flux that crosses a land--ocean interface.
+  Physically, momentum reflects off headlands rather than penetrating into
+  land cells.
+
+\item \textbf{Ghost-point fill.} At non-periodic physical boundaries
+  (open boundaries, domain edges), ghost points are filled by copying the
+  nearest interior value before each smoothing pass. At periodic boundaries,
+  the MPI halo exchange fills the ghost points. At interior subdomain
+  boundaries, \texttt{exchange\_xxx(brk)} synchronises ghost points between
+  MPI ranks before each pass.
+\end{enumerate}
+
+Together, these ensure that the flux through every boundary face is zero,
+which is the discrete analogue of $\partial\mathcal{B}/\partial n = 0$ and
+is what guarantees conservation (\S3).
+
+\section{Iterative application and spreading width}
+
+The smoother is applied $N$ times in sequence, with an MPI exchange of
+$\mathcal{B}$ between each pass. For a single pass on a uniform grid with
+spacing $\Delta x$, the effective diffusion coefficient is
+$\kappa = c_1\,\Delta x^2 = \tfrac{3}{16}\,\Delta x^2$, and the Gaussian
+spreading width after $N$ passes is
+\begin{equation}
+  \sigma = \Delta x\,\sqrt{\frac{3N}{8}}, \qquad
+  \text{FWHM} = 2\sqrt{2\ln 2}\;\sigma \approx 2.355\,\sigma.
+\end{equation}
+Representative values for $\Delta x = 30$\,m:
+
+\medskip
+\begin{center}
+\begin{tabular}{@{}cccc@{}}
+\toprule
+$N$ & $\sigma$ (m) & FWHM (m) & MPI exchanges \\
+\midrule
+2  & 26 &  61 & 2 \\
+4  & 37 &  87 & 4 \\
+8  & 52 & 122 & 8 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\medskip\noindent
+The default is $N=4$ (FWHM $\approx 87$\,m, comparable to the surfzone width
+at Duck94-scale bathymetry).
+
+\section{Implementation summary}
+
+\begin{itemize}
+\item CPP flag \texttt{SMOOTH\_BRK} under \texttt{\#ifdef BREAKING}.
+  Inactive when \texttt{BRK0} is defined.
+\item Parameter \texttt{N\_brk\_smooth\,=\,4} (hardcoded in
+  \texttt{wec\_forces\_tile}).
+\item Smoothing is applied to $\mathcal{B}(i,j)$ at rho-points, after the
+  \texttt{BRK0} block and before the projection to
+  \texttt{brk2dx}/\texttt{brk2de}. Both the surface-stress path
+  (\texttt{SURFACE\_BREAK}) and the body-force path (\texttt{BODY\_BREAK})
+  benefit, since both read $\mathcal{B}(i,j)$.
+\item Scratch arrays \texttt{FX\_brk}, \texttt{FE\_brk}, \texttt{FE1\_brk}
+  are module-level allocatables, allocated in \texttt{init\_arrays\_wec\_tile}.
+\end{itemize}
+
+\end{document}

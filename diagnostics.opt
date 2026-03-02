@@ -24,6 +24,8 @@
       integer, parameter         :: nrpf          =  24       ! total recs per file
 
       logical, parameter, public :: diag_uv       = .true.    ! Momentum diagnostics
+      logical, parameter         :: wrt_diag_3d   = .false.   ! Write 3D per-level budget terms
+      logical, parameter         :: wrt_diag_int  = .true.    ! Write 2D depth-integrated budget terms
       logical, parameter, public :: diag_trc      = .false.   ! Selected tracers diagnostics
       logical, parameter, public :: diag_pflx     = .false.   ! Baroclinic pressure fluxes
 

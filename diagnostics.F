@@ -978,17 +978,19 @@
 
         call ncwrite(ncid,'ocean_time',(/time/),(/record/))
         if (diag_avg) then
-          if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag_avg,Vdiag_avg)
+          if (diag_uv .and. wrt_diag_3d)
+     &      call wrt_diag_uv(ncid,record,Udiag_avg,Vdiag_avg)
           if (diag_trc) call wrt_diag_trc(ncid,record,Tdiag_avg)
         else
-          if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag,Vdiag)
+          if (diag_uv .and. wrt_diag_3d)
+     &      call wrt_diag_uv(ncid,record,Udiag,Vdiag)
           if (diag_trc) call wrt_diag_trc(ncid,record,Tdiag)
         endif
 
         if (diag_pflx)  call wrt_diag_pflx(ncid,record,up_avg,vp_avg)
 
         ! Write depth-integrated momentum diagnostics
-        if (diag_uv) then
+        if (diag_uv .and. wrt_diag_int) then
           if (diag_avg) then
             call wrt_diag_uv_int(ncid,record,
      &                     Udiag_int_avg,Vdiag_int_avg)
@@ -1037,7 +1039,7 @@
       integer                        :: it
 
 
-      if (diag_uv) then
+      if (diag_uv .and. wrt_diag_3d) then
         dimnames = (/dn_xu,dn_yr,dn_zr, dn_tm/)
         dimsizes = (/ xi_u,  eta_rho,  nz,      0/)
 
@@ -1124,6 +1126,9 @@
      &                   ,'WEC explicit RHS (vortex+body+streaming)')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
 
+      endif  ! wrt_diag_3d
+
+      if (diag_uv .and. wrt_diag_int) then
         ! Depth-integrated momentum diagnostics (2D + time)
         dimnames3 = (/dn_xu,dn_yr, dn_tm/)
         dimsizes3 = (/ xi_u,  eta_rho,   0/)
