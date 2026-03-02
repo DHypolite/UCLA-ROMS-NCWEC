@@ -1,0 +1,73 @@
+
+      ! ****************************************************************
+      ! User inputs
+     
+      !-------------WRITING TO OUTPUT PARAMETERS -------------------!
+
+      logical,public,parameter :: wrt_wec_out = .true.              ! output wec variables
+
+      logical,parameter :: wrt_his = .true.             ! t/f to write module history file
+      real,parameter          :: output_period_his = 3600           ! output period in seconds
+      integer,parameter        :: nrpf_his          = 24             ! total recs per file
+      
+      logical,parameter  :: wrt_avg = .false.             ! t/f to write module averages file
+      real,parameter           :: output_period_avg = 900         ! output averaging period in seconds
+      integer,parameter        :: nrpf_avg          = 24            ! total recs per file
+
+      ! controls both his and avg variables:
+      logical :: wrt_sup = .false.                 ! write quasi-static setup [m]
+      logical :: wrt_sup_zeta =.false.             ! write quasi-static setup + zeta [m]
+      logical :: wrt_ust2d = .true.               ! write 2d stokes in xi-dir [m/s]
+      logical :: wrt_vst2d = .true.               ! write 2d stokes in eta-dir [m/s]
+      logical :: wrt_ust = .true.                 ! write 3d stokes in xi-dir [m/s]
+      logical :: wrt_vst = .true.                 ! write 3d stokes in eta-dir [m/s]
+      logical :: wrt_wst = .true.                 ! write 3d stokes in vert. [m/s]
+      logical :: wrt_Akb = .true.                 ! write wave-breaking induced vert. diffusivity [m^2/s]
+      logical :: wrt_Akw = .true.                 ! write wave-induced additional vert. diffusivity [m^2/s]
+      logical :: wrt_kvf = .true.                 ! write vert vortex force [m/s^2]
+      logical :: wrt_calP = .true.                ! write pressure correction term [m^2/s^2]
+      logical :: wrt_Kapsrf = .true.              ! write surface bernoulli head in prsgrd [m^2/s^2] 
+      
+
+      ! Quantities below need to be addded to wec_frc.F writing machinery (just declaring names in wec_frc.F)
+      logical :: wrt_wveb = .true.                ! write breaking dissipation [m^3/s^3]
+      logical :: wrt_wved = .true.                ! 
+      logical :: wrt_frc2dx = .true.
+      logical :: wrt_frc2de = .true.     
+      logical :: wrt_brk2dx = .true.
+      logical :: wrt_brk2de = .true.
+      logical :: wrt_brk3dx = .false.     ! 3D breaking body force xi-dir (needs BODY_BREAK)
+      logical :: wrt_brk3de = .false.     ! 3D breaking body force eta-dir (needs BODY_BREAK)
+      logical :: wrt_frc3dx = .false.     ! 3D streaming body force xi-dir (needs BODY_FRICTION)
+      logical :: wrt_frc3de = .false.     ! 3D streaming body force eta-dir (needs BODY_FRICTION)
+
+      logical :: wrt_hvf_int = .true.    ! depth-integrated horiz. vortex force [m^2/s^2]
+      logical :: wrt_rD      = .true.    ! bottom drag coefficient r_D [m/s]
+
+
+      integer :: interp_frc  = 0                           ! interpolate forcing from coarser input grid (=1) or not (=0)
+
+      ! 		WW3 FORCING FILE CONVENTIONS
+      ! 		ww_ naming is from old convention, wavewatch, leaving it how it was for now
+      type (ncforce) :: nc_wwag        = ncforce(vname='Awave', tname='wwv_time' )    ! wave amplitude [m]
+      type (ncforce)  :: nc_wwdg        = ncforce(vname='Dwave', tname='wwv_time' )   ! wave direction [radians] FROM TRUE NORTH?
+      type (ncforce) :: nc_wwpg        = ncforce(vname='Pwave', tname='wwv_time' )     ! wave period [s]
+      type (ncforce)  :: nc_wweb        = ncforce(vname='eb', tname='wwv_time' )       ! breaking dissipation [m^3/s^3] 
+      type (ncforce)  :: nc_wwed        = ncforce(vname='ed', tname='wwv_time' )       ! frictional dissipation [m^3/s^3]
+      type (ncforce)  :: nc_wwqb        = ncforce(vname='qb', tname='wwv_time' )       ! fraction of breaking waves
+      type (ncforce)  :: nc_wwuob       = ncforce(vname='uorb', tname='wwv_time ')     ! u-orbital velocity [m/s]
+      type (ncforce)  :: nc_wwvob       = ncforce(vname='vorb', tname='wwv_time' )     ! v-orbital velocity
+     
+      !Forcing needed for Leonel's broad spectra ust,vst calculation
+      type (ncforce) :: nc_wwUSg        = ncforce(vname='ust2d', tname='wwv_time' )   ! depth-averaged stokes u-veloc [m/s]
+      type (ncforce) :: nc_wwVSg        = ncforce(vname='vst2d', tname='wwv_time' )   ! depth-avaraged stokes v-veloc [m/s]
+      type (ncforce) :: nc_wwus0g       = ncforce(vname='ust0', tname='wwv_time' )     ! surface stokes u-veloc [m/s]
+      type (ncforce) :: nc_wwvs0g       = ncforce(vname='vst0', tname='wwv_time' )    ! surface stokes v-veloc [m/s]
+      type (ncforce) :: nc_wwsup        = ncforce(vname='sup', tname='wwv_time' )     ! wave setdown [m]
+      type (ncforce) :: nc_wwlmv        = ncforce(vname='lmw', tname='wwv_time' )     ! mean wavelength [m] (for diffusivity approx)
+      
+
+      
+
+      ! End of user inputs
+      ! *************************************************************
