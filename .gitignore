@@ -24,3 +24,4 @@ venv/
 *.tex
 *.aux
 *.gz
+*.py
