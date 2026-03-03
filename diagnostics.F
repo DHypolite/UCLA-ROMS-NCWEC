@@ -96,7 +96,7 @@
 
       ! Netcdf outputting:
       ! -----------------
-      integer            :: output_time = 0         ! record number of output. 0 indicates we need new file
+      real               :: output_time = 0         ! elapsed time [s] since last output
       integer            :: record = nrpf           ! to trigger the first file creation
       integer            :: ncid=-1, prev_fill_mode
 
