@@ -199,8 +199,8 @@
 #if defined BREAKING && defined SHELTER_BRK
       real, allocatable, dimension(:,:) :: shelter_fac
 #endif
-      real, allocatable, dimension(:,:), public :: hvf_int_xi  ! depth-integrated horiz vortex force xi [m^2/s^2]
-      real, allocatable, dimension(:,:), public :: hvf_int_eta ! depth-integrated horiz vortex force eta [m^2/s^2]
+      real, allocatable, dimension(:,:), public :: hvf_int_xi  ! depth-integrated horiz vortex force xi [m^2/s^2] (normalized by dm*dn)
+      real, allocatable, dimension(:,:), public :: hvf_int_eta ! depth-integrated horiz vortex force eta [m^2/s^2] (normalized by dm*dn)
       real, allocatable, dimension(:,:) :: hvf_int_xi_avg
       real, allocatable, dimension(:,:) :: hvf_int_eta_avg
 # if defined WAVE_OFFLINE && !defined MONOWAVE
@@ -1372,6 +1372,20 @@
         enddo
       enddo                ! <-- end k-loop
 
+      ! Normalize hvf_int from ru-units [m^4/s^2] to diagnostic units
+      ! [m^2/s^2] by dividing by cell area dm*dn = 1/(pm*pn).
+      do j=jstr,jend
+        do i=istrU,iend
+          hvf_int_xi(i,j) = hvf_int_xi(i,j)
+     &                    / (dm_u(i,j)*dn_u(i,j))
+        enddo
+      enddo
+      do j=jstrV,jend
+        do i=istr,iend
+          hvf_int_eta(i,j) = hvf_int_eta(i,j)
+     &                     / (dm_v(i,j)*dn_v(i,j))
+        enddo
+      enddo
 
       end subroutine compute_wec_rhs_uv_terms
 

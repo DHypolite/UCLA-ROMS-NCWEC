@@ -15,6 +15,7 @@
       use roms_read_write
       use grid
       use tides
+      use coupling, only: r_D
 
       implicit none
       private
@@ -56,6 +57,7 @@
       real,allocatable,dimension(:,:,:),public   :: Vdiag_int ! Depth-integrated v diags (nx,ny,nmd)
       real,allocatable,dimension(:,:,:)          :: Udiag_int_avg ! Averaged depth-integrated u diags
       real,allocatable,dimension(:,:,:)          :: Vdiag_int_avg ! Averaged depth-integrated v diags
+      real,allocatable,dimension(:,:)            :: rD_avg        ! Averaged r_D for diagnostics
       real, public, allocatable, dimension(:,:)  :: u_prev
       real, public, allocatable, dimension(:,:)  :: v_prev
 
@@ -205,6 +207,10 @@
           allocate(Vdiag_int_avg(nx,ny,nmd))
           Udiag_int_avg = 0
           Vdiag_int_avg = 0
+          if (wrt_diag_int) then
+            allocate(rD_avg(nx,ny))
+            rD_avg = 0
+          endif
         endif
       endif
 
@@ -942,6 +948,10 @@
       Udiag_int_avg = Udiag_int_avg*(1-coef) + Udiag_int*coef
       Vdiag_int_avg = Vdiag_int_avg*(1-coef) + Vdiag_int*coef
 
+      if (wrt_diag_int) then
+        rD_avg = rD_avg*(1-coef) + r_D(1:nx,1:ny)*coef
+      endif
+
       end subroutine calc_diag_int_avg  !]
 ! ----------------------------------------------------------------------
       subroutine do_diagnostics  ![
@@ -1000,10 +1010,24 @@
           endif
         endif
 
+        ! Write r_D (bottom drag coefficient, rho-grid)
+        ! rD_avg(1:nx,1:ny) is interior-only: index 1 = first interior point
+        ! so data is passed as full array; only start vector uses bfx/bfy
+        if (diag_uv .and. wrt_diag_int) then
+          if (diag_avg) then
+            call ncwrite(ncid,'r_D',rD_avg,
+     &                   (/bfx, bfy, record/))
+          else
+            call ncwrite(ncid,'r_D',r_D(1:nx,1:ny),
+     &                   (/bfx, bfy, record/))
+          endif
+        endif
+
         navg_diag = 0
         if (diag_uv .and. diag_avg) then
           Udiag_int_avg = 0
           Vdiag_int_avg = 0
+          if (wrt_diag_int) rD_avg = 0
         endif
 
         ierr=nf90_close(ncid)
@@ -1231,6 +1255,16 @@
         ierr = nf90_put_att(ncid,varid,'long_name'
      &         ,'Depth-integrated WEC explicit RHS')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2')
+
+        ! Bottom drag coefficient (rho-grid, 2D + time)
+        dimnames3 = (/dn_xr,dn_yr, dn_tm/)
+        dimsizes3 = (/ xi_rho, eta_rho, 0/)
+
+        varid = nccreate(ncid,'r_D',dimnames3,
+     &                   dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &               ,'Bottom drag coefficient')
+        ierr = nf90_put_att(ncid,varid,'units','meter second-1')
 
       endif
 

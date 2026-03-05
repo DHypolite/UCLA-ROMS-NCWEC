@@ -42,7 +42,7 @@
       logical :: wrt_frc3de = .false.     ! 3D streaming body force eta-dir (needs BODY_FRICTION)
 
       logical :: wrt_hvf_int = .true.    ! depth-integrated horiz. vortex force [m^2/s^2]
-      logical :: wrt_rD      = .true.    ! bottom drag coefficient r_D [m/s]
+      logical :: wrt_rD      = .false.   ! now output in diagnostics file instead
 
 
       integer :: interp_frc  = 0                           ! interpolate forcing from coarser input grid (=1) or not (=0)
