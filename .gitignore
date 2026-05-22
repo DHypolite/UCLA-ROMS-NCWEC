@@ -27,3 +27,4 @@ venv/
 *.py
 *.text
 *.pdf
+my_token.txt
