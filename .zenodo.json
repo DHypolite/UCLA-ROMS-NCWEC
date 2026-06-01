@@ -1,0 +1,54 @@
+{
+  "title": "UCLA-ROMS-NCWEC: The Regional Oceanic Modeling System with Non-Conservative Surface Gravity Wave Effects on Currents",
+  "description": "UCLA-ROMS-NCWEC is a modified version of the Regional Oceanic Modeling System (ROMS) that implements non-conservative surface gravity wave effects on currents (NCWEC). The framework is described in Hypolite et al. (GMD, 2026).",
+  "upload_type": "software",
+  "license": "GPL-3.0",
+  "creators": [
+    {
+      "name": "Hypolite, Delphine",
+      "affiliation": "University of California, Los Angeles",
+      "orcid": "0000-0002-2582-188X"
+    },
+    {
+      "name": "Dauhajre, Daniel P.",
+      "affiliation": "University of California, Santa Barbara"
+    },
+    {
+      "name": "Ho, Minna",
+      "affiliation": "University of California, Los Angeles"
+    },
+    {
+      "name": "Romero, Leonel",
+      "affiliation": "University of Connecticut"
+    },
+    {
+      "name": "McWilliams, James C.",
+      "affiliation": "University of California, Los Angeles"
+    }
+  ],
+  "grants": [
+    {"id": "10.13039/100000001::2343297"},
+    {"id": "10.13039/100000001::2124174"},
+    {"id": "10.13039/100000001::1924686"},
+    {"id": "10.13039/100000001::2121646"}
+  ],
+  "keywords": [
+    "ocean modeling",
+    "ROMS",
+    "wave-current interactions",
+    "non-conservative wave effects",
+    "coastal oceanography",
+    "submesoscale",
+    "Southern California"
+  ],
+  "communities": [
+    {"identifier": "geoscientific-model-development"}
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/DHypolite/UCLA-ROMS-NCWEC",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    }
+  ]
+}
