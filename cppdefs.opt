@@ -34,8 +34,6 @@ c--#endif
 #    undef  AKB0              /* define to zero breaking mixing */
 #    undef  Akb_U2010         /* undef=R2021 TKE, defined=U2010 monochromatic */
 #    define FKV_FUNC4         /* Akb profile shape */
-#    define SMOOTH_BRK        /* Laplacian smoothing of brk to spread surfzone forcing */
-#    define SHELTER_BRK       /* coastline shelter: scale brk by embayment concavity */
 #  endif
 
 #    define WAVE_FRICTION     /* master switch for bottom streaming */

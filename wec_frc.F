@@ -193,12 +193,6 @@
       real, allocatable, dimension(:,:) :: stk
       real, allocatable, dimension(:,:) :: ebrk
       real, allocatable, dimension(:,:) :: erol
-#if defined BREAKING && (defined SMOOTH_BRK || defined SHELTER_BRK)
-      real, allocatable, dimension(:,:) :: FX_brk, FE_brk, FE1_brk
-#endif
-#if defined BREAKING && defined SHELTER_BRK
-      real, allocatable, dimension(:,:) :: shelter_fac
-#endif
       real, allocatable, dimension(:,:), public :: hvf_int_xi  ! depth-integrated horiz vortex force xi [m^2/s^2] (normalized by dm*dn)
       real, allocatable, dimension(:,:), public :: hvf_int_eta ! depth-integrated horiz vortex force eta [m^2/s^2] (normalized by dm*dn)
       real, allocatable, dimension(:,:) :: hvf_int_xi_avg
@@ -725,10 +719,6 @@
       integer :: i, j, k
 
       real, parameter :: init=0.0
-#if defined BREAKING && defined SHELTER_BRK
-      integer iter_s
-      real cff_sh, cff1_sh, Lf0_sh, cff_sum_sh, pi_sh
-#endif
 
       ! compute_auxiliary_bounds.h is needed for istrR, jstrR, etc
       ! This had to declared last else won't compile
@@ -801,18 +791,6 @@
       ebrk=0.
       allocate( erol(GLOBAL_2D_ARRAY))
       erol=0.
-#if defined BREAKING && (defined SMOOTH_BRK || defined SHELTER_BRK)
-      allocate( FX_brk(GLOBAL_2D_ARRAY))
-      FX_brk=0.
-      allocate( FE_brk(GLOBAL_2D_ARRAY))
-      FE_brk=0.
-      allocate( FE1_brk(GLOBAL_2D_ARRAY))
-      FE1_brk=0.
-#endif
-#if defined BREAKING && defined SHELTER_BRK
-      allocate( shelter_fac(GLOBAL_2D_ARRAY))
-      shelter_fac=0.
-#endif
       allocate( hvf_int_xi(GLOBAL_2D_ARRAY))
       hvf_int_xi=0.
       allocate( hvf_int_eta(GLOBAL_2D_ARRAY))
@@ -1102,32 +1080,6 @@
       allocate( hvf_int_eta_avg(GLOBAL_2D_ARRAY) )
       hvf_int_eta_avg=0.
 
-#if defined BREAKING && defined SHELTER_BRK
-! ------------------------------------------------------------------
-! Compute shelter_fac from land mask (one-time, precomputed).
-! Physical motivation: WW3 ran at coarser resolution with a less
-! detailed coastline. Breaking dissipation it sends into fine-scale
-! embayments is unphysical — those areas would be sheltered if WW3
-! could see them. shelter_fac corrects for this resolution mismatch.
-!
-! Algorithm:
-!   1. Initialize land_influence = 1 - rmask  (1 on land, 0 in ocean)
-!   2. Apply N_shelter passes of isotropic Laplacian smoother to
-!      bleed land signal into nearby ocean cells
-!   3. In embayments (land on 3 sides), signal bleeds in from
-!      multiple directions → high land_influence
-!   4. On straight coast (land on 1 side), moderate land_influence
-!   5. Convert to scaling factor:
-!        shelter_fac = 1             if land_influence <= Lf0
-!        shelter_fac → 0 linearly   as land_influence → 1
-!      where Lf0 ≈ 0.5 is the straight-coast threshold
-!
-! Parameters (hardcoded, adjust and recompile):
-!   N_shelter = 8   → detection radius σ ≈ 52m at Δx=30m
-!   Lf0       = 0.5 → straight coast: no reduction
-! ------------------------------------------------------------------
-#  include "compute_shelter_fac.h"
-#endif
 
       end subroutine init_arrays_wec_tile
       !---------------------------------------------------------------
@@ -1698,11 +1650,6 @@
 # ifdef SOLVE3D
       integer ::  k,kk
 # endif
-# if defined BREAKING && defined SMOOTH_BRK
-      integer iter_brk, N_brk_smooth
-      real cff_s, cff1_s
-      parameter (N_brk_smooth=4)   ! Laplacian smoothing passes for brk
-# endif
       parameter ( eps=1.e-10,
      &            bconst=0.1D0, !0.03D0,               ! breaking contribution to KPP
      &            a_kv=1.2D0, !1.2D0                 ! breaking scale for eddy visc.
@@ -1818,20 +1765,6 @@
       do j=jstr-1,jend+1
         do i=istr-1,iend+1
           brk(i,j)=0.D0
-        enddo
-      enddo
-# endif
-
-# if defined BREAKING && defined SMOOTH_BRK && !defined BRK0
-#  include "smooth_brk.h"
-# endif
-
-# if defined BREAKING && defined SHELTER_BRK && !defined BRK0
-!  Scale brk by precomputed shelter factor (reduces breaking
-!  in embayments where WW3 coastline did not resolve sheltering).
-      do j=jstr,jend
-        do i=istr,iend
-          brk(i,j) = brk(i,j) * shelter_fac(i,j)
         enddo
       enddo
 # endif
