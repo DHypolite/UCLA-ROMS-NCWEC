@@ -2459,7 +2459,7 @@
 #  else
           abot  =Uorb_mag(i,j)*inv_f(i,j)
 #  endif
-          delta =0.160455*((abot/max(Zob,eps))**0.83)*max(Zob,eps)
+          delta =0.160455*((abot/max(Zob,eps))**0.82)*max(Zob,eps)  ! exponent 0.82 (Grant-Madsen), was 0.83 typo
           inv_k =min(max(a_frc*delta,eps),Dstp(i,j))
           kfrc  =1.0/inv_k
 

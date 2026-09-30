@@ -232,7 +232,7 @@
 
 c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 
-            Vtsq=Vtc*ws*sqrt(max(0., bvf(i,j,k-1) ))  !<-- fix by Gokhan
+            Vtsq=1.8*Vtc*ws*sqrt(max(1.e-5, bvf(i,j,k-1) ))  !<-- fix by Jeroen (PR #94)
 
             Cr(i,k)=FC(i,k)+Vtsq
 
@@ -268,7 +268,11 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
             Cr(i,k)=FC(i,k)-FC(i,0)
 #if defined WEC && defined WAVE_FRICTION && !defined FRC_HBBL0
             !D. Hypolite addition for bottom streaming
-     &     + C_Ek*f(i,j)*f(i,j)*abs(z_w(i,j,k))/max(h(i,j)-1.0, 0.1)
+            ! Sign is MINUS: bottom Cr = FC(k)-FC(0) is minus the
+            ! bed-referenced integral (BBL where Cr<0), so the ~1 m
+            ! BBL term of GMD Eq. 3 (written with Cr>0 inside the BBL)
+            ! enters with a minus sign here. "+" could only thin the BBL.
+     &     - C_Ek*f(i,j)*f(i,j)*abs(z_w(i,j,k))/max(h(i,j)-1.0, 0.1)
 #endif
             if (kbbl(i) == 0 .and. Cr(i,k) > 0.) kbbl(i)=k
           enddo
