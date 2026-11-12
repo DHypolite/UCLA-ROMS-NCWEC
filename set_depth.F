@@ -326,6 +326,14 @@
      &                        +MID*DU_avg2(i,j)
      &                     -BAK*DU_avg_bak(i,j)
      &               )/DC(i,0)
+! The barotropic fluxes DU_avg* are Lagrangian (include ust2d*D, see
+! step2d_FB.F), the 3D u is Eulerian: remove the Stokes part, as in the
+! eta-branch below (+vst2d).  Without it, each step pulls the depth-mean
+! 3D u to ubar+ust2d (Coriolis then sees -f(U+2*Ust): spurious inertial
+! oscillation of the mean flow with cross-xi Stokes drift).
+#ifdef WEC
+     &                   +ust2d(i,j)
+#endif
 #   endif
           enddo
         endif
